@@ -1,3 +1,4 @@
+import java.io.NotActiveException;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException; //si le serveur n’est pas actif
 import java.util.ArrayList;
@@ -36,19 +37,24 @@ public class ServiceCentral implements InterfaceServiceCentral {
         // realiser en appelant leur methode calculer()
         while (!calculs.isEmpty()) {
             for (ServiceNoeud noeud : noeuds) {
-                try {
-                    PositionImage calcul = calculs.getFirst();
-                    Image morceau = noeud.calculerImage(sc, calcul.getX(), calcul.getY(), split, split);
-                    client.afficherMorceau(morceau, calcul.getX(), calcul.getY(), split, split);
-                    calculs.remove(calcul);
-                } catch (RemoteException e) {
-                    noeuds.remove(noeud);
-                    System.out.println("Serveur de calcul déconnecté");
-                } catch (ServerNotActiveException e) {
-                    noeuds.remove(noeud);
-                    System.out.println("Serveur de calcul déconnecté");
-                }
+
+                PositionImage calcul = calculs.getFirst();
+                calculs.remove(calcul);
+                Thread t = new Thread(() -> {
+                    try {
+                        Image morceau = noeud.calculerImage(sc, calcul.getX(), calcul.getY(), split, split);
+                        synchronized (client) {
+                            client.afficherMorceau(morceau, calcul.getX(), calcul.getY(), split, split);
+                        }
+                    } catch (RemoteException | ServerNotActiveException e) {
+                        System.err.println("Erreur RMI lors du calcul ou de l'affichage : " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+                t.start();
+
             }
+
         }
 
     }
