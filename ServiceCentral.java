@@ -47,6 +47,7 @@ public class ServiceCentral implements InterfaceServiceCentral {
                             client.afficherMorceau(morceau, calcul.getX(), calcul.getY(), split, split);
                         }
                     } catch (RemoteException | ServerNotActiveException e) {
+                        calculs.add(calcul);
                         System.err.println("Erreur RMI lors du calcul ou de l'affichage : " + e.getMessage());
                         e.printStackTrace();
                     }
